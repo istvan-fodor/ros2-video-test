@@ -52,6 +52,7 @@ def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[D
     image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_RGB2BGR)
 
     # Iterate over detections and add bounding boxes and masks
+    seed = 734546732
     for detection in detection_results:
         label = detection.label
         score = detection.score
@@ -59,8 +60,9 @@ def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[D
         mask = detection.mask
 
         # Sample a random color for each detection
+        np.random.seed(seed)
         color = np.random.randint(0, 256, size=3)
-
+        seed = seed + 1
         # Draw bounding box
         cv2.rectangle(image_cv2, (box.xmin, box.ymin), (box.xmax, box.ymax), color.tolist(), 2)
         cv2.putText(image_cv2, f'{label}: {score:.2f}', (box.xmin, box.ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color.tolist(), 2)
@@ -73,40 +75,6 @@ def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[D
             cv2.drawContours(image_cv2, contours, -1, color.tolist(), 2)
 
     return cv2.cvtColor(image_cv2, cv2.COLOR_BGR2RGB)
-
-def random_named_css_colors(num_colors: int) -> List[str]:
-    """
-    Returns a list of randomly selected named CSS colors.
-
-    Args:
-    - num_colors (int): Number of random colors to generate.
-
-    Returns:
-    - list: List of randomly selected named CSS colors.
-    """
-    # List of named CSS colors
-    named_css_colors = [
-        'aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige', 'bisque', 'black', 'blanchedalmond',
-        'blue', 'blueviolet', 'brown', 'burlywood', 'cadetblue', 'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
-        'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan', 'darkgoldenrod', 'darkgray', 'darkgreen', 'darkgrey',
-        'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange', 'darkorchid', 'darkred', 'darksalmon', 'darkseagreen',
-        'darkslateblue', 'darkslategray', 'darkslategrey', 'darkturquoise', 'darkviolet', 'deeppink', 'deepskyblue',
-        'dimgray', 'dimgrey', 'dodgerblue', 'firebrick', 'floralwhite', 'forestgreen', 'fuchsia', 'gainsboro', 'ghostwhite',
-        'gold', 'goldenrod', 'gray', 'green', 'greenyellow', 'grey', 'honeydew', 'hotpink', 'indianred', 'indigo', 'ivory',
-        'khaki', 'lavender', 'lavenderblush', 'lawngreen', 'lemonchiffon', 'lightblue', 'lightcoral', 'lightcyan', 'lightgoldenrodyellow',
-        'lightgray', 'lightgreen', 'lightgrey', 'lightpink', 'lightsalmon', 'lightseagreen', 'lightskyblue', 'lightslategray',
-        'lightslategrey', 'lightsteelblue', 'lightyellow', 'lime', 'limegreen', 'linen', 'magenta', 'maroon', 'mediumaquamarine',
-        'mediumblue', 'mediumorchid', 'mediumpurple', 'mediumseagreen', 'mediumslateblue', 'mediumspringgreen', 'mediumturquoise',
-        'mediumvioletred', 'midnightblue', 'mintcream', 'mistyrose', 'moccasin', 'navajowhite', 'navy', 'oldlace', 'olive',
-        'olivedrab', 'orange', 'orangered', 'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise', 'palevioletred', 'papayawhip',
-        'peachpuff', 'peru', 'pink', 'plum', 'powderblue', 'purple', 'rebeccapurple', 'red', 'rosybrown', 'royalblue', 'saddlebrown',
-        'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver', 'skyblue', 'slateblue', 'slategray', 'slategrey',
-        'snow', 'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato', 'turquoise', 'violet', 'wheat', 'white',
-        'whitesmoke', 'yellow', 'yellowgreen'
-    ]
-
-    # Sample random named CSS colors
-    return random.sample(named_css_colors, min(num_colors, len(named_css_colors)))
 
 def mask_to_polygon(mask: np.ndarray) -> List[List[int]]:
     # Find contours in the binary mask
@@ -249,7 +217,7 @@ class CameraReceiver(Node):
             Image,
             'camera/image',
             self.image_callback,
-            10
+            0
         )
 
         # Create a publisher to send the segmented part to a new topic 'sensor/image'
@@ -261,12 +229,9 @@ class CameraReceiver(Node):
         # Store the latest image in a class attribute
         self.latest_image = None
 
-        # Create a timer that fires every 1 second (1000 ms)
-        self.timer = self.create_timer(1.0, self.timer_callback)
-
         self.processing = False
-
-   def image_callback(self, msg):
+        
+    def image_callback(self, msg):
         # Check if the system is already processing an image
         if self.processing:
             self.get_logger().info('Still processing the previous image, skipping new message...')
