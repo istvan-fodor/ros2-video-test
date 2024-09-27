@@ -1,3 +1,7 @@
+import sys
+print("Curent Python: ", sys.executable)
+
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -8,11 +12,9 @@ import random
 from dataclasses import dataclass
 from typing import Any, List, Dict, Optional, Union, Tuple
 
-import cv2
 import torch
-import requests
 import numpy as np
-from PIL import Image
+from PIL import Image as PILImage
 from transformers import AutoModelForMaskGeneration, AutoProcessor, pipeline
 
 
@@ -44,9 +46,9 @@ class DetectionResult:
                                    xmax=detection_dict['box']['xmax'],
                                    ymax=detection_dict['box']['ymax']))
 
-def annotate(image: Union[Image.Image, np.ndarray], detection_results: List[DetectionResult]) -> np.ndarray:
+def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[DetectionResult]) -> np.ndarray:
     # Convert PIL Image to OpenCV format
-    image_cv2 = np.array(image) if isinstance(image, Image.Image) else image
+    image_cv2 = np.array(image) if isinstance(image, PILImage.Image) else image
     image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_RGB2BGR)
 
     # Iterate over detections and add bounding boxes and masks
@@ -140,11 +142,12 @@ def polygon_to_mask(polygon: List[Tuple[int, int]], image_shape: Tuple[int, int]
 
     return mask
 
-def load_image(image_str: str) -> Image.Image:
+def load_image(image_str: str) -> PILImage.Image:
     if image_str.startswith("http"):
-        image = Image.open(requests.get(image_str, stream=True).raw).convert("RGB")
+        import requests
+        image = PILImage.open(requests.get(image_str, stream=True).raw).convert("RGB")
     else:
-        image = Image.open(image_str).convert("RGB")
+        image = PILImage.open(image_str).convert("RGB")
 
     return image
 
@@ -175,7 +178,7 @@ def refine_masks(masks: torch.BoolTensor, polygon_refinement: bool = False) -> L
 
 
 def detect(
-    image: Image.Image,
+    image: PILImage.Image,
     labels: List[str],
     threshold: float = 0.3,
     detector_id: Optional[str] = None
@@ -191,7 +194,7 @@ def detect(
     return results
 
 def segment(
-    image: Image.Image,
+    image: PILImage.Image,
     detection_results: List[Dict[str, Any]],
     polygon_refinement: bool = False,
     segmenter_id: Optional[str] = None
@@ -217,7 +220,7 @@ def segment(
     return detection_results
 
 def grounded_segmentation(
-    image: Union[Image.Image, str],
+    image: Union[PILImage.Image, str],
     labels: List[str],
     threshold: float = 0.3,
     polygon_refinement: bool = False,
@@ -226,7 +229,9 @@ def grounded_segmentation(
         image = load_image(image)
 
     detections = detect(image, labels, threshold, detector_id)
-    detections = segment(image, detections, polygon_refinement, segmenter_id)
+
+    if len(detections) > 0:
+        detections = segment(image, detections, polygon_refinement, segmenter_id)
 
     return np.array(image), detections
 
@@ -261,6 +266,7 @@ class CameraReceiver(Node):
 
     def image_callback(self, msg):
         # Store the latest image message when it arrives
+        self.get_logger().info('Processing the latest image...')
         self.latest_image = msg
 
     def timer_callback(self):
@@ -270,9 +276,10 @@ class CameraReceiver(Node):
 
             # Convert the ROS Image message to an OpenCV image
             frame = self.bridge.imgmsg_to_cv2(self.latest_image, 'bgr8')
+            image = PILImage.fromarray(frame)
             
             # Call the AI stub to simulate detecting a sensor
-            sensor_image = ai_model_segment_image(frame)
+            sensor_image = ai_model_segment_image(image, labels = ['a sunglass'], threshold = 0.4)
             
             if sensor_image is not None:
                 self.get_logger().info('Sensor detected! Publishing segmented image...')
@@ -286,7 +293,7 @@ class CameraReceiver(Node):
                 self.get_logger().info('No sensor detected.')
 
 
-def ai_model_segment_image(image):
+def ai_model_segment_image(image, labels, threshold):
     image, detections = grounded_segmentation(
         image=image,
         labels=labels,
