@@ -264,33 +264,47 @@ class CameraReceiver(Node):
         # Create a timer that fires every 1 second (1000 ms)
         self.timer = self.create_timer(1.0, self.timer_callback)
 
-    def image_callback(self, msg):
-        # Store the latest image message when it arrives
-        self.get_logger().info('Processing the latest image...')
-        self.latest_image = msg
+        self.processing = False
 
-    def timer_callback(self):
-        # Only process the latest image if it exists
-        if self.latest_image is not None:
-            self.get_logger().info('Processing the latest image...')
+   def image_callback(self, msg):
+        # Check if the system is already processing an image
+        if self.processing:
+            self.get_logger().info('Still processing the previous image, skipping new message...')
+            return
+
+        # Set the processing flag to True, indicating that we're now processing an image
+        self.processing = True
+
+        try:
+            # Store the latest image message
+            self.get_logger().info('Received a new image, processing...')
+            self.latest_image = msg
 
             # Convert the ROS Image message to an OpenCV image
             frame = self.bridge.imgmsg_to_cv2(self.latest_image, 'bgr8')
             image = PILImage.fromarray(frame)
             
             # Call the AI stub to simulate detecting a sensor
-            sensor_image = ai_model_segment_image(image, labels = ['a sunglass'], threshold = 0.4)
+            sensor_image = ai_model_segment_image(image, labels=['a sunglass'], threshold=0.4)
             
             if sensor_image is not None:
                 self.get_logger().info('Sensor detected! Publishing segmented image...')
                 
-                # Convert the cropped sensor image back to a ROS Image message
+                # Convert the processed sensor image back to a ROS Image message
                 sensor_msg = self.bridge.cv2_to_imgmsg(sensor_image, encoding='bgr8')
 
                 # Publish the segmented sensor image to the 'sensor/image' topic
                 self.sensor_publisher.publish(sensor_msg)
             else:
                 self.get_logger().info('No sensor detected.')
+
+        except Exception as e:
+            # Log the exception
+            self.get_logger().error(f'Error during image processing: {e}')
+
+        finally:
+            # Ensure the processing flag is reset even if an error occurs
+            self.processing = False
 
 
 def ai_model_segment_image(image, labels, threshold):
