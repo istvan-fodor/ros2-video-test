@@ -52,7 +52,7 @@ def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[D
     image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_RGB2BGR)
 
     # Iterate over detections and add bounding boxes and masks
-    seed = 734546732
+    seed = 734546733
     for detection in detection_results:
         label = detection.label
         score = detection.score
@@ -61,7 +61,7 @@ def annotate(image: Union[PILImage.Image, np.ndarray], detection_results: List[D
 
         # Sample a random color for each detection
         np.random.seed(seed)
-        color = np.random.randint(0, 256, size=3)
+        color = np.random.randint(150, 256, size=3)
         seed = seed + 1
         # Draw bounding box
         cv2.rectangle(image_cv2, (box.xmin, box.ymin), (box.xmax, box.ymax), color.tolist(), 2)
@@ -182,8 +182,8 @@ def segment(
 
     masks = refine_masks(masks, polygon_refinement)
 
-    #for detection_result, mask in zip(detection_results, masks):
-        #detection_result.mask = mask
+    for detection_result, mask in zip(detection_results, masks):
+        detection_result.mask = mask
 
     return detection_results
 
@@ -250,7 +250,7 @@ class CameraReceiver(Node):
             image = PILImage.fromarray(frame)
             
             # Call the AI stub to simulate detecting a sensor
-            sensor_image = ai_model_segment_image(image, labels=['a sunglass'], threshold=0.4)
+            sensor_image = ai_model_segment_image(image, labels=['face'], threshold=0.4)
             
             if sensor_image is not None:
                 self.get_logger().info('Sensor detected! Publishing segmented image...')
@@ -276,7 +276,7 @@ def ai_model_segment_image(image, labels, threshold):
     image, detections = grounded_segmentation(
         image=image,
         labels=labels,
-        threshold=threshold,
+        threshold=threshold,    
         polygon_refinement=True,
     )
     image = annotate(image, detections)  
@@ -288,8 +288,6 @@ segmenter_id = "facebook/sam-vit-base"
 
 device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 print('device =', device)
-
-segmenter_id = segmenter_id if segmenter_id is not None else "facebook/sam-vit-base"
 
 segmentator = AutoModelForMaskGeneration.from_pretrained(segmenter_id).to(device)
 processor = AutoProcessor.from_pretrained(segmenter_id)
