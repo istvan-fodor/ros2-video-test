@@ -21,11 +21,22 @@ class CameraPublisher(Node):
         if not ret:
             self.get_logger().error('Failed to capture image')
             return
+        
+        resized_frame = self.resize_image(frame, 640)
 
         # Convert OpenCV image (BGR format) to ROS2 Image message
-        msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
+        msg = self.bridge.cv2_to_imgmsg(resized_frame, 'bgr8')
         self.publisher_.publish(msg)
         self.get_logger().info('Image published')
+
+    def resize_image(self, image, max_width):
+        h, w = image.shape[:2]
+        scaling_factor = max_width / float(w)
+        new_width = int(w * scaling_factor)
+        new_height = int(h * scaling_factor)
+        # Resize the image to the specified dimensions
+        resized_image = cv2.resize(image, (new_width, new_height))
+        return resized_image
 
     def destroy_node(self):
         # Release the camera when the node is destroyed
