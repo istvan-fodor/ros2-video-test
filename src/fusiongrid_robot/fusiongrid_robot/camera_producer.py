@@ -1,13 +1,13 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 import cv2
 from cv_bridge import CvBridge
 
 class CameraPublisher(Node):
     def __init__(self):
         super().__init__('camera_publisher')
-        self.publisher_ = self.create_publisher(Image, 'camera/image', 10)
+        self.publisher_ = self.create_publisher(CompressedImage, 'camera/image', 10)
         self.timer = self.create_timer(0.1, self.publish_image)  # Publish every 0.1 seconds
         self.bridge = CvBridge()
 
@@ -24,8 +24,15 @@ class CameraPublisher(Node):
         
         resized_frame = self.resize_image(frame, 640)
 
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]  # You can adjust the quality here
+        success, encoded_image = cv2.imencode('.jpg', frame, encode_param)
+
+        msg = CompressedImage()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.format = 'jpeg'  # Specify the format
+        msg.data = encoded_image.tobytes()  # Convert the encoded image to bytes
+
         # Convert OpenCV image (BGR format) to ROS2 Image message
-        msg = self.bridge.cv2_to_imgmsg(resized_frame, 'bgr8')
         self.publisher_.publish(msg)
         self.get_logger().info('Image published')
 
