@@ -8,7 +8,7 @@ class CameraPublisher(Node):
     def __init__(self):
         super().__init__('camera_publisher')
         self.publisher_ = self.create_publisher(CompressedImage, 'camera/image', 10)
-        self.timer = self.create_timer(0.1, self.publish_image)  # Publish every 0.1 seconds
+        self.timer = self.create_timer(1.0/30.0, self.publish_image)  
         self.bridge = CvBridge()
 
         # Open the laptop camera (0 is usually the default camera)
@@ -25,7 +25,7 @@ class CameraPublisher(Node):
         resized_frame = self.resize_image(frame, 640)
 
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]  # You can adjust the quality here
-        success, encoded_image = cv2.imencode('.jpg', frame, encode_param)
+        success, encoded_image = cv2.imencode('.jpg', resized_frame, encode_param)
 
         msg = CompressedImage()
         msg.header.stamp = self.get_clock().now().to_msg()

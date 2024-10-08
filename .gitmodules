@@ -1,0 +1,3 @@
+[submodule "src/audio_common"]
+	path = src/audio_common
+	url = https://github.com/mgonzs13/audio_common.git

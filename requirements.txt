@@ -1,5 +1,11 @@
 pillow
 opencv-python
-numpy==1.26.4
+numpy
 requests
 transformers
+pyaudio
+accelerator
+noisereduce
+crewai
+crewai-tools
+openai

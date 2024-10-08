@@ -21,7 +21,9 @@ setup(
     entry_points={
         'console_scripts': [
             'camera_producer = fusiongrid_robot.camera_producer:main',
-            'camera_consumer = fusiongrid_robot.camera_consumer:main'
+            'grounding_dino_node = fusiongrid_robot.grounding_dino_node:main',
+            'speech_recognition_node = fusiongrid_robot.speech_recognition_node:main',
+            'segmentation_node = fusiongrid_robot.segmentation_node:main'
         ],
     },
 )
