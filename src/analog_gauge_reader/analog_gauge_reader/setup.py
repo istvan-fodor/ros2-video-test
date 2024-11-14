@@ -1,6 +1,8 @@
 from setuptools import find_packages, setup
+import os
+import glob
 
-package_name = 'fusiongrid_robot'
+package_name = 'analog_gauge_reader'
 
 setup(
     name=package_name,
@@ -10,8 +12,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name, ['launch/analog_gauge_reader.launch.py'])
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'ultralytics', 'mmcv', 'mmocr', 'scikit-learn'],
     zip_safe=True,
     maintainer='istvan.fodor',
     maintainer_email='info@istvanfodor.com',
@@ -20,11 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'camera_producer = fusiongrid_robot.camera_producer:main',
-            'grounding_dino_node = fusiongrid_robot.grounding_dino_node:main',
-            'speech_recognition_node = fusiongrid_robot.speech_recognition_node:main',
-            'segmentation_node = fusiongrid_robot.segmentation_node:main',
-            'video_publisher = fusiongrid_robot.video_publisher:main'
+            'gauge_reader_node = analog_gauge_reader.analog_gauge_reader:main',
         ],
     },
 )

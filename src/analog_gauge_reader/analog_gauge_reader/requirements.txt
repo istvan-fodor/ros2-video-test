@@ -1,0 +1,8 @@
+torch
+torchvision
+mmcv
+mmengine
+mmdet
+mmocr
+ultralytics
+scikit-learn

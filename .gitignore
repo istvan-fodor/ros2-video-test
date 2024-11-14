@@ -4,3 +4,4 @@ log
 checkpoints
 venv
 __pycache__
+.vscode
