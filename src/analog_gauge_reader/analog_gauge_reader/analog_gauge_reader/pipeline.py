@@ -17,7 +17,7 @@ from .geometry.ellipse import fit_ellipse, cart_to_pol, get_line_ellipse_point, 
 from .angle_reading_fit.angle_converter import AngleConverter
 from .angle_reading_fit.line_fit import line_fit, line_fit_ransac
 from .segmentation.segmenation_inference import get_start_end_line, segment_gauge_needle, \
-    get_fitted_line, cut_off_line
+    get_fitted_line, cut_off_line, load_segmentation_model
 # pylint: disable=no-name-in-module
 # pylint: disable=no-member
 from .evaluation import constants
@@ -112,6 +112,7 @@ class ImageProcessor:
     def __init__(self, detection_model_path, key_point_model_path, segmentation_model_path):
          load_detection_model(detection_model_path)
          self.key_point_inferencer = KeyPointInference(key_point_model_path)
+         load_segmentation_model(segmentation_model_path)
 
     def process_image(self, image, run_path, debug, eval_mode, image_is_raw=False):
 
@@ -392,12 +393,8 @@ class ImageProcessor:
         try:
             needle_mask_x, needle_mask_y = segment_gauge_needle(cropped_resized_img)
         except AttributeError:
-            logging.error("Segmentation failed, no needle found")
-            errors[constants.SEGMENTATION_FAILED_KEY] = True
-            result.append({constants.READING_KEY: constants.FAILED})
-            result_full[constants.NEEDLE_MASK_KEY] = constants.FAILED
-            write_files(result, result_full, errors, run_path, eval_mode)
-            raise Exception("Segmentation failed, no needle found")
+            logging.warning("Segmentation failed, no needle found")
+            return None
 
         if eval_mode:
             result_full[constants.NEEDLE_MASK_KEY] = {
@@ -437,7 +434,7 @@ class ImageProcessor:
             errors[constants.OCR_NONE_DETECTED_KEY] = True
             result.append({constants.READING_KEY: constants.FAILED})
             write_files(result, result_full, errors, run_path, eval_mode)
-            raise Exception("OCR failed, no numbers found")
+            return None
         if len(number_labels) == 1:
             logging.warning("Only found 1 number with ocr")
             errors[constants.OCR_ONLY_ONE_DETECTED_KEY] = True
@@ -457,10 +454,7 @@ class ImageProcessor:
 
         if point_needle_ellipse.shape[0] == 0:
             logging.error("Needle line and ellipse do not intersect!")
-            errors[constants.OCR_NONE_DETECTED_KEY] = True
-            result.append({constants.READING_KEY: constants.FAILED})
-            write_files(result, result_full, errors, run_path, eval_mode)
-            raise Exception("Needle line and ellipse do not intersect")
+            return None
 
         if debug:
             plotter.plot_ellipse(point_needle_ellipse.reshape(1, 2),
