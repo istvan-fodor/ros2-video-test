@@ -1,11 +1,11 @@
 torch==2.0.1 --index-url https://download.pytorch.org/whl/cu117
 torchvision==0.15.2
-mmcv==2.0.1 --find-links  https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
-mmengine==0.10.5
-mmdet==3.1.0
-mmocr==1.0.1
+mmcv==2.0.0 --find-links  https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
+mmengine==0.7.2
+mmdet==3.0.0
+mmocr==1.0.0
 numpy==1.26.4
-ultralytics
+ultralytics==8.0.66
 scikit-learn
 opencv-python
 cv-bridge

@@ -63,34 +63,31 @@ class AnalogGaugeReaderRos(Node):
             self.get_logger().warn("No image received yet, ignoring read request")
             return res
 
-        try:
-            image = self.bridge.imgmsg_to_cv2(original_image)
-            with tempfile.TemporaryDirectory() as out_path:
-                os.removedirs(out_path)
-                gauge_readings = [self.image_processor.process_image(
-                    image=image,
-                    image_is_raw=True,
-                    run_path=out_path,
-                    debug=self.debug,
-                    eval_mode=True
-                )]
+        image = self.bridge.imgmsg_to_cv2(original_image)
+        with tempfile.TemporaryDirectory() as out_path:
+            os.removedirs(out_path)
+            gauge_readings = [self.image_processor.process_image(
+                image=image,
+                image_is_raw=True,
+                run_path=out_path,
+                debug=self.debug,
+                eval_mode=True
+            )]
 
-            for gauge_reading in gauge_readings:
-                if gauge_reading["value"] is None:
-                    raise Exception("Value reading failed")
-                reading = GaugeReading()
-                value = Float64()
-                value.data = gauge_reading["value"] if self.round_decimals < 0 else round(gauge_reading["value"], self.round_decimals)
-                unit = String()
-                unit.data = gauge_reading["unit"] if gauge_reading["unit"] is not None else ''
-                reading.value = value
-                reading.unit = unit
-                res.result.readings.append(reading)
-            self.get_logger().info("Successfully processed read request.")
-            self.readings_pub.publish(res.result)
-            return res
-        finally:
-            self._init_subscribers()
+        for gauge_reading in gauge_readings:
+            if gauge_reading is None or gauge_reading["value"] is None:
+                return
+            reading = GaugeReading()
+            value = Float64()
+            value.data = gauge_reading["value"] if self.round_decimals < 0 else round(gauge_reading["value"], self.round_decimals)
+            unit = String()
+            unit.data = gauge_reading["unit"] if gauge_reading["unit"] is not None else ''
+            reading.value = value
+            reading.unit = unit
+            res.result.readings.append(reading)
+        self.get_logger().info("Successfully processed read request.")
+        self.readings_pub.publish(res.result)
+        return res
 
 def main(args=None):
     rclpy.init(args=args)
