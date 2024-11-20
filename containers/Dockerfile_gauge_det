@@ -30,14 +30,15 @@ WORKDIR /
 
 RUN git clone https://github.com/ethz-asl/analog_gauge_reader.git
 
-RUN echo 1
-RUN git clone https://github.com/istvan-fodor/ros2-video-test.git
+ADD . /ros2-video-test
 
 RUN cp -r /analog_gauge_reader/models /ros2-video-test
 
 WORKDIR /ros2-video-test
 
-RUN pip install openmim
+RUN pip3 install pip --upgrade
+RUN pip install -U openmim
+RUN pip install torch==2.0.0 --index-url https://download.pytorch.org/whl/cu117
 RUN mim install -r src/analog_gauge_reader/analog_gauge_reader/requirements.txt
 # Initialize rosdep for dependency management
 RUN rosdep init || true && rosdep update
