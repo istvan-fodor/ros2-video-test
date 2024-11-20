@@ -1,0 +1,46 @@
+FROM ros:humble
+
+# Update and install essential tools and dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-pip \
+    python3-vcstool \
+    curl \
+    wget \
+    nano \
+    net-tools \
+    iputils-ping \
+    git-lfs \
+    ros-humble-rmw-cyclonedds-cpp \
+    && rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /tmp
+
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+RUN sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+RUN wget https://developer.download.nvidia.com/compute/cuda/12.6.2/local_installers/cuda-repo-ubuntu2204-12-6-local_12.6.2-560.35.03-1_amd64.deb
+RUN sudo dpkg -i cuda-repo-ubuntu2204-12-6-local_12.6.2-560.35.03-1_amd64.deb
+RUN sudo cp /var/cuda-repo-ubuntu2204-12-6-local/cuda-*-keyring.gpg /usr/share/keyrings/
+RUN sudo apt-get update
+RUN sudo apt-get -y install cuda-toolkit-12-6
+RUN rm cuda-repo-ubuntu2204-12-6-local_12.6.2-560.35.03-1_amd64.deb
+
+WORKDIR /
+
+RUN git clone https://github.com/ethz-asl/analog_gauge_reader.git
+
+RUN echo 1
+RUN git clone https://github.com/istvan-fodor/ros2-video-test.git
+
+RUN cp -r /analog_gauge_reader/models /ros2-video-test
+
+WORKDIR /ros2-video-test
+
+RUN pip install -r src/analog_gauge_reader/analog_gauge_reader/requirements.txt
+# Initialize rosdep for dependency management
+RUN rosdep init || true && rosdep update
+
+RUN . /opt/ros/humble/setup.sh
+
+

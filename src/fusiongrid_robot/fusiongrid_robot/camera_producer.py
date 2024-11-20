@@ -1,13 +1,25 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 import cv2
 from cv_bridge import CvBridge
 
 class CameraPublisher(Node):
     def __init__(self):
         super().__init__('camera_publisher')
-        self.publisher_ = self.create_publisher(CompressedImage, 'camera/image', 10)
+        
+        # Declare parameters
+        self.declare_parameter('compressed', True)
+        self.declare_parameter('ResizeX', 0)
+        
+        self.compressed = self.get_parameter('compressed').value
+        self.resize_x = self.get_parameter('ResizeX').value
+
+        # Create publisher based on 'compressed' parameter
+        topic = 'camera/image/compressed' if self.compressed else 'camera/image'
+        msg_type = CompressedImage if self.compressed else Image
+        self.publisher_ = self.create_publisher(msg_type, topic, 10)
+
         self.timer = self.create_timer(1.0/30.0, self.publish_image)  
         self.bridge = CvBridge()
 
@@ -22,19 +34,29 @@ class CameraPublisher(Node):
             self.get_logger().error('Failed to capture image')
             return
         
-        resized_frame = self.resize_image(frame, 640)
+        # Resize the image if ResizeX is set
+        if self.resize_x > 0:
+            frame = self.resize_image(frame, self.resize_x)
 
-        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]  # You can adjust the quality here
-        success, encoded_image = cv2.imencode('.jpg', resized_frame, encode_param)
+        if self.compressed:
+            # Publish as CompressedImage
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]
+            success, encoded_image = cv2.imencode('.jpg', frame, encode_param)
+            if not success:
+                self.get_logger().error('Failed to encode image')
+                return
+            
+            msg = CompressedImage()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.format = 'jpeg'
+            msg.data = encoded_image.tobytes()
+        else:
+            # Publish as normal Image
+            msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            msg.header.stamp = self.get_clock().now().to_msg()
 
-        msg = CompressedImage()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.format = 'jpeg'  # Specify the format
-        msg.data = encoded_image.tobytes()  # Convert the encoded image to bytes
-
-        # Convert OpenCV image (BGR format) to ROS2 Image message
         self.publisher_.publish(msg)
-        self.get_logger().info('Image published')
+        self.get_logger().info(f'Image published on {self.publisher_.topic}')
 
     def resize_image(self, image, max_width):
         h, w = image.shape[:2]

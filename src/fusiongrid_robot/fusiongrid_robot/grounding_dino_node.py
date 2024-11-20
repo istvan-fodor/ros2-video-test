@@ -211,7 +211,7 @@ def ai_model_segment_image(image, labels, threshold):
 
     return image
 
-detector_id = "IDEA-Research/grounding-dino-tiny"
+detector_id = "IDEA-Research/grounding-dino-base"
 segmenter_id = "facebook/sam-vit-base"
 labels = ['face']
 
