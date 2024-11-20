@@ -37,7 +37,8 @@ RUN cp -r /analog_gauge_reader/models /ros2-video-test
 
 WORKDIR /ros2-video-test
 
-RUN pip install -r src/analog_gauge_reader/analog_gauge_reader/requirements.txt
+RUN pip install openmim
+RUN mim install -r src/analog_gauge_reader/analog_gauge_reader/requirements.txt
 # Initialize rosdep for dependency management
 RUN rosdep init || true && rosdep update
 

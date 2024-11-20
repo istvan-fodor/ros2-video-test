@@ -1,12 +1,12 @@
-torch==2.0.1 --index-url https://download.pytorch.org/whl/cu117
-torchvision==0.15.2
-mmcv==2.0.0 --find-links  https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
+torch==2.0.0 --index-url https://download.pytorch.org/whl/cu117
+torchvision==0.15.1
+mmcv @ https://download.openmmlab.com/mmcv/dist/cu117/torch2.0.0/mmcv-2.0.0-cp310-cp310-manylinux1_x86_64.whl
 mmengine==0.7.2
 mmdet==3.0.0
 mmocr==1.0.0
 numpy==1.26.4
 ultralytics==8.0.66
-scikit-learn
+scikit-learn==1.2.2
 opencv-python
 cv-bridge
 Pillow
