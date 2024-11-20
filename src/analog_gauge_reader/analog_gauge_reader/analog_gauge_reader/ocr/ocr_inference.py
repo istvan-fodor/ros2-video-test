@@ -15,6 +15,7 @@ from ocr.ocr_reading import OCRReading
 from geometry.warp_ellipse import warp_ellipse_to_circle, map_point_original_image,\
       map_point_transformed_image
 
+ocr_model = MMOCRInferencer(det='DB_r18', rec='ABINet')
 
 def ocr(img, visualize=True):
     """
@@ -24,7 +25,7 @@ def ocr(img, visualize=True):
     :return: ocr_results_dict with two keys: 'predictions' what we care about
      and 'visualization' the image for debugging/understanding
     """
-    ocr_model = MMOCRInferencer(det='DB_r18', rec='ABINet')
+    
 
     readings = []
 

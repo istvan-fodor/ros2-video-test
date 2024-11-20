@@ -66,17 +66,22 @@ class AnalogGaugeReaderRos(Node):
         image = self.bridge.imgmsg_to_cv2(original_image)
         with tempfile.TemporaryDirectory() as out_path:
             os.removedirs(out_path)
-            gauge_readings = [self.image_processor.process_image(
-                image=image,
-                image_is_raw=True,
-                run_path=out_path,
-                debug=self.debug,
-                eval_mode=True
-            )]
+            try:
+                gauge_reading = self.image_processor.process_image(
+                    image=image,
+                    image_is_raw=True,
+                    run_path=out_path,
+                    debug=self.debug,
+                    eval_mode=True
+                )
+                self.get_logger().info(f"Gauge reading: {gauge_reading}")
+            except Exception as e:
+                return None
 
-        for gauge_reading in gauge_readings:
+
             if gauge_reading is None or gauge_reading["value"] is None:
                 return
+            
             reading = GaugeReading()
             value = Float64()
             value.data = gauge_reading["value"] if self.round_decimals < 0 else round(gauge_reading["value"], self.round_decimals)
@@ -85,8 +90,8 @@ class AnalogGaugeReaderRos(Node):
             reading.value = value
             reading.unit = unit
             res.result.readings.append(reading)
-        self.get_logger().info("Successfully processed read request.")
-        self.readings_pub.publish(res.result)
+            self.get_logger().info("Successfully processed read request.")
+            self.readings_pub.publish(res.result)
         return res
 
 def main(args=None):
